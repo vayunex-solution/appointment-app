@@ -1,0 +1,4 @@
+---
+deployment:
+  tasks:
+    - /bin/cp -Rf backend/. /home/vayunexs/api.booknex.vayunexsolution.com/

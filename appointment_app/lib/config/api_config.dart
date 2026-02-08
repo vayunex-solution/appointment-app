@@ -1,7 +1,7 @@
 // API Configuration
 class ApiConfig {
-  // Change this to your backend URL
-  static const String baseUrl = 'http://127.0.0.1:5000/api';
+  // Production API URL
+  static const String baseUrl = 'https://api.booknex.vayunexsolution.com/api';
   
   // Auth endpoints
   static const String registerCustomer = '$baseUrl/auth/register/customer';
