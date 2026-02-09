@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
+import '../../services/admin_service.dart';
 import '../../config/theme.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      final admin = Provider.of<AdminService>(context, listen: false);
+      admin.fetchPendingProviders();
+      admin.fetchUsers();
+      admin.fetchReports();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,6 +31,15 @@ class AdminDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              final admin = Provider.of<AdminService>(context, listen: false);
+              admin.fetchPendingProviders();
+              admin.fetchUsers();
+              admin.fetchReports();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -25,119 +51,117 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome, ${user?.name ?? "Admin"}! 👑',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+      body: Consumer<AdminService>(
+        builder: (context, admin, _) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
                     ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Manage your appointment system',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Stats
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.people,
-                    label: 'Total Users',
-                    value: '156',
-                    color: AppTheme.primaryColor,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome, ${user?.name ?? "Admin"}! 👑',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Manage your appointment system',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.store,
-                    label: 'Providers',
-                    value: '24',
-                    color: AppTheme.successColor,
-                  ),
+                const SizedBox(height: 24),
+
+                // Stats
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.people,
+                        label: 'Total Users',
+                        value: '${admin.allUsers.length}',
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.store,
+                        label: 'Providers',
+                        value: '${admin.allUsers.where((u) => u['role'] == 'provider').length}',
+                        color: AppTheme.successColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.pending_actions,
+                        label: 'Pending Approvals',
+                        value: '${admin.pendingProviders.length}',
+                        color: AppTheme.warningColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        icon: Icons.currency_rupee,
+                        label: 'Total Revenue',
+                        value: '₹${admin.reports?['totalRevenue'] ?? 0}',
+                        color: AppTheme.accentColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Quick Actions
+                Text(
+                  'Quick Actions',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                _ActionTile(
+                  icon: Icons.verified_user,
+                  title: 'Pending Provider Approvals',
+                  subtitle: '${admin.pendingProviders.length} providers waiting',
+                  onTap: () => Navigator.pushNamed(context, '/admin/pending-providers'),
+                ),
+                _ActionTile(
+                  icon: Icons.people_outline,
+                  title: 'Manage Users',
+                  subtitle: '${admin.allUsers.length} total users',
+                  onTap: () => Navigator.pushNamed(context, '/admin/users'),
+                ),
+                _ActionTile(
+                  icon: Icons.analytics,
+                  title: 'View Reports',
+                  subtitle: 'Revenue and booking analytics',
+                  onTap: () => Navigator.pushNamed(context, '/admin/reports'),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.pending_actions,
-                    label: 'Pending Approvals',
-                    value: '5',
-                    color: AppTheme.warningColor,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.calendar_today,
-                    label: 'Total Bookings',
-                    value: '342',
-                    color: AppTheme.accentColor,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Quick Actions
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            _ActionTile(
-              icon: Icons.verified_user,
-              title: 'Pending Provider Approvals',
-              subtitle: '5 providers waiting for approval',
-              onTap: () {},
-            ),
-            _ActionTile(
-              icon: Icons.people_outline,
-              title: 'Manage Users',
-              subtitle: 'View, block or unblock users',
-              onTap: () {},
-            ),
-            _ActionTile(
-              icon: Icons.analytics,
-              title: 'View Reports',
-              subtitle: 'Revenue and booking analytics',
-              onTap: () {},
-            ),
-            _ActionTile(
-              icon: Icons.history,
-              title: 'Login Logs',
-              subtitle: 'View security audit logs',
-              onTap: () {},
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

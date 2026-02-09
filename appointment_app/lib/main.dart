@@ -8,6 +8,7 @@ import 'config/theme.dart';
 import 'services/auth_provider.dart';
 import 'services/provider_service.dart';
 import 'services/customer_service.dart';
+import 'services/admin_service.dart';
 
 // Screens
 import 'screens/auth/login_screen.dart';
@@ -22,6 +23,9 @@ import 'screens/provider/add_service_screen.dart';
 import 'screens/provider/profile_screen.dart';
 import 'screens/provider/availability_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
+import 'screens/admin/pending_providers_screen.dart';
+import 'screens/admin/manage_users_screen.dart';
+import 'screens/admin/reports_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,6 +41,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProviderService()),
         ChangeNotifierProvider(create: (_) => CustomerService()),
+        ChangeNotifierProvider(create: (_) => AdminService()),
       ],
       child: MaterialApp(
         title: 'BookNex',
@@ -57,6 +62,9 @@ class MyApp extends StatelessWidget {
           '/provider/profile': (context) => const ProviderProfileScreen(),
           '/provider/availability': (context) => const AvailabilityScreen(),
           '/admin/dashboard': (context) => const AdminDashboardScreen(),
+          '/admin/pending-providers': (context) => const PendingProvidersScreen(),
+          '/admin/users': (context) => const ManageUsersScreen(),
+          '/admin/reports': (context) => const ReportsScreen(),
         },
       ),
     );
