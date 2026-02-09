@@ -22,6 +22,7 @@ class ApiConfig {
   
   // Customer endpoints
   static const String providers = '$baseUrl/customer/providers';
+  static const String categories = '$baseUrl/customer/categories';
   
   // Booking endpoints
   static const String bookings = '$baseUrl/bookings';

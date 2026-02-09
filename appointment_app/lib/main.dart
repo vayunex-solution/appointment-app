@@ -7,11 +7,15 @@ import 'config/theme.dart';
 // Services
 import 'services/auth_provider.dart';
 import 'services/provider_service.dart';
+import 'services/customer_service.dart';
 
 // Screens
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/customer/home_screen.dart';
+import 'screens/customer/browse_providers_screen.dart';
+import 'screens/customer/provider_details_screen.dart';
+import 'screens/customer/my_bookings_screen.dart';
 import 'screens/provider/dashboard_screen.dart';
 import 'screens/provider/services_screen.dart';
 import 'screens/provider/add_service_screen.dart';
@@ -32,6 +36,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ProviderService()),
+        ChangeNotifierProvider(create: (_) => CustomerService()),
       ],
       child: MaterialApp(
         title: 'BookNex',
@@ -43,6 +48,9 @@ class MyApp extends StatelessWidget {
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
           '/customer/home': (context) => const CustomerHomeScreen(),
+          '/customer/browse': (context) => const BrowseProvidersScreen(),
+          '/customer/provider-details': (context) => const ProviderDetailsScreen(),
+          '/customer/my-bookings': (context) => const MyBookingsScreen(),
           '/provider/dashboard': (context) => const ProviderDashboardScreen(),
           '/provider/services': (context) => const ProviderServicesScreen(),
           '/provider/add-service': (context) => const AddServiceScreen(),
