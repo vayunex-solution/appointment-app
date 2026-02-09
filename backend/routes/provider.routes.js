@@ -22,6 +22,71 @@ router.get('/profile', async (req, res) => {
     }
 });
 
+// Update provider profile
+router.put('/profile', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        if (!provider) {
+            return res.status(404).json({ error: 'Provider profile not found' });
+        }
+        await Provider.updateProfile(provider.id, req.body);
+        res.json({ message: 'Profile updated successfully' });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
+// Get dashboard stats
+router.get('/dashboard', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const stats = await Provider.getDashboardStats(provider.id);
+        res.json({ stats, provider });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch dashboard' });
+    }
+});
+
+// Get availability
+router.get('/availability', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const availability = await Provider.getAvailability(provider.id);
+        res.json({ availability });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch availability' });
+    }
+});
+
+// Set availability (single day)
+router.post('/availability', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const id = await Provider.setAvailability(provider.id, req.body);
+        res.json({ message: 'Availability set successfully', id });
+    } catch (error) {
+        console.error('Set availability error:', error);
+        res.status(500).json({ error: 'Failed to set availability' });
+    }
+});
+
+// Set availability (bulk - all days)
+router.post('/availability/bulk', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const { schedules } = req.body; // Array of availability objects
+
+        for (const schedule of schedules) {
+            await Provider.setAvailability(provider.id, schedule);
+        }
+        res.json({ message: 'Availability schedule saved' });
+    } catch (error) {
+        console.error('Bulk availability error:', error);
+        res.status(500).json({ error: 'Failed to save availability schedule' });
+    }
+});
+
 // Get all services
 router.get('/services', async (req, res) => {
     try {

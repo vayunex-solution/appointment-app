@@ -14,7 +14,9 @@ class ApiConfig {
   
   // Provider endpoints
   static const String providerProfile = '$baseUrl/provider/profile';
+  static const String providerDashboard = '$baseUrl/provider/dashboard';
   static const String providerServices = '$baseUrl/provider/services';
+  static const String providerAvailability = '$baseUrl/provider/availability';
   static const String providerBookings = '$baseUrl/provider/bookings';
   static const String providerWallet = '$baseUrl/provider/wallet';
   

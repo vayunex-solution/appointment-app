@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS providers (
     shop_name VARCHAR(200) NOT NULL,
     category VARCHAR(100) NOT NULL,
     location VARCHAR(255) NOT NULL,
+    description TEXT NULL,
     is_approved BOOLEAN DEFAULT FALSE,
     wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -37,6 +38,23 @@ CREATE TABLE IF NOT EXISTS providers (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_category (category),
     INDEX idx_approved (is_approved)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===========================================
+-- PROVIDER AVAILABILITY TABLE
+-- ===========================================
+CREATE TABLE IF NOT EXISTS provider_availability (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    provider_id INT NOT NULL,
+    day_of_week TINYINT NOT NULL COMMENT '0=Sunday, 1=Monday, ..., 6=Saturday',
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    slot_duration INT DEFAULT 30 COMMENT 'Duration in minutes',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_provider_day (provider_id, day_of_week),
+    INDEX idx_provider (provider_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ===========================================

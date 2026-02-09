@@ -92,7 +92,7 @@ class ProviderDashboardScreen extends StatelessWidget {
                   child: _ActionButton(
                     icon: Icons.add,
                     label: 'Add Service',
-                    onTap: () {},
+                    onTap: () => Navigator.pushNamed(context, '/provider/add-service'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -100,15 +100,15 @@ class ProviderDashboardScreen extends StatelessWidget {
                   child: _ActionButton(
                     icon: Icons.schedule,
                     label: 'Set Slots',
-                    onTap: () {},
+                    onTap: () => Navigator.pushNamed(context, '/provider/availability'),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _ActionButton(
-                    icon: Icons.history,
-                    label: 'History',
-                    onTap: () {},
+                    icon: Icons.build,
+                    label: 'Services',
+                    onTap: () => Navigator.pushNamed(context, '/provider/services'),
                   ),
                 ),
               ],

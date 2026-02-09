@@ -6,12 +6,17 @@ import 'config/theme.dart';
 
 // Services
 import 'services/auth_provider.dart';
+import 'services/provider_service.dart';
 
 // Screens
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/customer/home_screen.dart';
 import 'screens/provider/dashboard_screen.dart';
+import 'screens/provider/services_screen.dart';
+import 'screens/provider/add_service_screen.dart';
+import 'screens/provider/profile_screen.dart';
+import 'screens/provider/availability_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 
 void main() {
@@ -26,9 +31,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ProviderService()),
       ],
       child: MaterialApp(
-        title: 'Appointment App',
+        title: 'BookNex',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         initialRoute: '/',
@@ -38,6 +44,10 @@ class MyApp extends StatelessWidget {
           '/register': (context) => const RegisterScreen(),
           '/customer/home': (context) => const CustomerHomeScreen(),
           '/provider/dashboard': (context) => const ProviderDashboardScreen(),
+          '/provider/services': (context) => const ProviderServicesScreen(),
+          '/provider/add-service': (context) => const AddServiceScreen(),
+          '/provider/profile': (context) => const ProviderProfileScreen(),
+          '/provider/availability': (context) => const AvailabilityScreen(),
           '/admin/dashboard': (context) => const AdminDashboardScreen(),
         },
       ),
