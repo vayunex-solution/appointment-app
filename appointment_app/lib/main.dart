@@ -26,6 +26,7 @@ import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/pending_providers_screen.dart';
 import 'screens/admin/manage_users_screen.dart';
 import 'screens/admin/reports_screen.dart';
+import 'screens/admin/audit_logs_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -65,6 +66,7 @@ class MyApp extends StatelessWidget {
           '/admin/pending-providers': (context) => const PendingProvidersScreen(),
           '/admin/users': (context) => const ManageUsersScreen(),
           '/admin/reports': (context) => const ReportsScreen(),
+          '/admin/logs': (context) => const AuditLogsScreen(),
         },
       ),
     );

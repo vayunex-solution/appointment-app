@@ -158,6 +158,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   subtitle: 'Revenue and booking analytics',
                   onTap: () => Navigator.pushNamed(context, '/admin/reports'),
                 ),
+                _ActionTile(
+                  icon: Icons.history,
+                  title: 'Login Audit Logs',
+                  subtitle: 'Security and login history',
+                  onTap: () => Navigator.pushNamed(context, '/admin/logs'),
+                ),
               ],
             ),
           );
