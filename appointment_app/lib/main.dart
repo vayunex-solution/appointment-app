@@ -13,6 +13,7 @@ import 'services/admin_service.dart';
 // Screens
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
 import 'screens/customer/home_screen.dart';
 import 'screens/customer/browse_providers_screen.dart';
 import 'screens/customer/provider_details_screen.dart';
@@ -22,6 +23,7 @@ import 'screens/provider/services_screen.dart';
 import 'screens/provider/add_service_screen.dart';
 import 'screens/provider/profile_screen.dart';
 import 'screens/provider/availability_screen.dart';
+import 'screens/provider/provider_bookings_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/pending_providers_screen.dart';
 import 'screens/admin/manage_users_screen.dart';
@@ -53,6 +55,7 @@ class MyApp extends StatelessWidget {
           '/': (context) => const AuthWrapper(),
           '/login': (context) => const LoginScreen(),
           '/register': (context) => const RegisterScreen(),
+          '/forgot-password': (context) => const ForgotPasswordScreen(),
           '/customer/home': (context) => const CustomerHomeScreen(),
           '/customer/browse': (context) => const BrowseProvidersScreen(),
           '/customer/provider-details': (context) => const ProviderDetailsScreen(),
@@ -62,6 +65,7 @@ class MyApp extends StatelessWidget {
           '/provider/add-service': (context) => const AddServiceScreen(),
           '/provider/profile': (context) => const ProviderProfileScreen(),
           '/provider/availability': (context) => const AvailabilityScreen(),
+          '/provider/bookings': (context) => const ProviderBookingsScreen(),
           '/admin/dashboard': (context) => const AdminDashboardScreen(),
           '/admin/pending-providers': (context) => const PendingProvidersScreen(),
           '/admin/users': (context) => const ManageUsersScreen(),

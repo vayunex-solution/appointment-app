@@ -219,7 +219,7 @@ class ProviderService extends ChangeNotifier {
   // Update booking status
   Future<bool> updateBookingStatus(int bookingId, String status) async {
     try {
-      final result = await ApiService.put(
+      final result = await ApiService.patch(
         '${ApiConfig.providerBookings}/$bookingId/status',
         {'status': status},
       );
