@@ -206,4 +206,102 @@ router.get('/wallet', async (req, res) => {
     }
 });
 
+// ========================
+// QUEUE MANAGEMENT
+// ========================
+
+// Get today's queue
+router.get('/queue/today', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const [rows] = await require('../config/db').execute(
+            `SELECT a.*, s.service_name, u.name as customer_name, u.mobile as customer_mobile
+             FROM appointments a
+             JOIN services s ON a.service_id = s.id
+             JOIN users u ON a.customer_id = u.id
+             WHERE a.provider_id = ? AND DATE(a.booking_date) = CURDATE()
+             AND a.status != 'cancelled'
+             ORDER BY a.queue_number ASC, a.slot_time ASC`,
+            [provider.id]
+        );
+
+        // Find currently serving
+        const serving = rows.find(r => r.status === 'confirmed');
+        
+        res.json({ 
+            queue: rows, 
+            currentServing: serving || null,
+            totalInQueue: rows.filter(r => r.status === 'pending').length,
+            completed: rows.filter(r => r.status === 'completed').length
+        });
+    } catch (error) {
+        console.error('Queue error:', error);
+        res.status(500).json({ error: 'Failed to fetch queue' });
+    }
+});
+
+// Serve next token (mark as confirmed/serving)
+router.patch('/queue/:id/serve', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const booking = await Booking.findById(req.params.id);
+
+        if (!booking || booking.provider_id !== provider.id) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+
+        await require('../config/db').execute(
+            `UPDATE appointments SET status = 'confirmed', served_at = NOW() WHERE id = ?`,
+            [req.params.id]
+        );
+        
+        res.json({ message: 'Now serving this customer' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update queue' });
+    }
+});
+
+// Complete current token
+router.patch('/queue/:id/complete', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const booking = await Booking.findById(req.params.id);
+
+        if (!booking || booking.provider_id !== provider.id) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+
+        await require('../config/db').execute(
+            `UPDATE appointments SET status = 'completed', completed_at = NOW() WHERE id = ?`,
+            [req.params.id]
+        );
+        
+        res.json({ message: 'Service completed' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to complete' });
+    }
+});
+
+// Skip / No-show
+router.patch('/queue/:id/skip', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const booking = await Booking.findById(req.params.id);
+
+        if (!booking || booking.provider_id !== provider.id) {
+            return res.status(404).json({ error: 'Booking not found' });
+        }
+
+        await require('../config/db').execute(
+            `UPDATE appointments SET status = 'cancelled' WHERE id = ?`,
+            [req.params.id]
+        );
+        
+        res.json({ message: 'Customer skipped' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to skip' });
+    }
+});
+
 module.exports = router;
+

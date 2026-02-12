@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/customer_service.dart';
 import '../../config/theme.dart';
+import 'submit_review_screen.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
@@ -203,6 +204,24 @@ class _BookingCard extends StatelessWidget {
                     },
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Cancel'),
+                  ),
+                if (status == 'completed')
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.star, size: 16),
+                    label: const Text('Review'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SubmitReviewScreen(booking: booking),
+                        ),
+                      );
+                    },
                   ),
               ],
             ),

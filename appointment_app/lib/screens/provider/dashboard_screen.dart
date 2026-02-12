@@ -161,6 +161,19 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.queue),
+                      label: const Text('QUEUE MANAGEMENT'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Navigator.pushNamed(context, '/provider/queue'),
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Upcoming bookings

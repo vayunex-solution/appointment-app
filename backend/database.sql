@@ -135,3 +135,29 @@ CREATE TABLE IF NOT EXISTS login_logs (
 INSERT INTO users (name, email, mobile, password_hash, role, is_verified) 
 VALUES ('Admin', 'admin@vayunexs.com', '9999999999', '$2a$10$xVqYLGUuVz5z5z5z5z5z5uHhHhHhHhHhHhHhHhHhHhHhHhHhHhHh', 'admin', TRUE)
 ON DUPLICATE KEY UPDATE name = name;
+
+-- ===========================================
+-- QUEUE TRACKING (add to appointments)
+-- ===========================================
+ALTER TABLE appointments ADD COLUMN queue_number INT NULL AFTER status;
+ALTER TABLE appointments ADD COLUMN served_at DATETIME NULL;
+ALTER TABLE appointments ADD COLUMN completed_at DATETIME NULL;
+
+-- ===========================================
+-- REVIEWS TABLE
+-- ===========================================
+CREATE TABLE IF NOT EXISTS reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    appointment_id INT NOT NULL UNIQUE,
+    customer_id INT NOT NULL,
+    provider_id INT NOT NULL,
+    rating TINYINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE,
+    INDEX idx_provider (provider_id),
+    INDEX idx_customer (customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+

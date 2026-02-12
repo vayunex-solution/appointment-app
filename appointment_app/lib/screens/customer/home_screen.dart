@@ -107,6 +107,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     onTap: () => Navigator.pushNamed(context, '/customer/my-bookings'),
                   ),
                 ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ActionCard(
+                    icon: Icons.queue,
+                    label: 'Queue\nStatus',
+                    onTap: () => Navigator.pushNamed(context, '/customer/queue-status'),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 24),

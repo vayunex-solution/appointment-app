@@ -27,7 +27,15 @@ class ApiConfig {
   // Booking endpoints
   static const String bookings = '$baseUrl/bookings';
   static const String myBookings = '$baseUrl/bookings/my';
-  
+
+  // Queue endpoints
+  static const String providerQueue = '$baseUrl/provider/queue/today';
+  static const String customerQueueStatus = '$baseUrl/customer/queue/status';
+
+  // Review endpoints  
+  static const String submitReview = '$baseUrl/customer/reviews';
+  static String providerReviews(int providerId) => '$baseUrl/customer/providers/$providerId/reviews';
+
   // Admin endpoints
   static const String adminPendingProviders = '$baseUrl/admin/providers/pending';
   static const String adminUsers = '$baseUrl/admin/users';

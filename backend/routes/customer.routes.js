@@ -126,4 +126,93 @@ router.get('/categories', async (req, res) => {
     }
 });
 
+// ========================
+// REVIEWS
+// ========================
+const Review = require('../models/Review');
+
+// Get reviews for a provider (public)
+router.get('/providers/:id/reviews', async (req, res) => {
+    try {
+        const reviews = await Review.getByProvider(req.params.id);
+        const ratingInfo = await Review.getProviderRating(req.params.id);
+        res.json({ reviews, ...ratingInfo });
+    } catch (error) {
+        console.error('Get reviews error:', error);
+        res.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+});
+
+// Submit a review (authenticated customer only)
+router.post('/reviews', authenticate, requireRole('customer'), async (req, res) => {
+    try {
+        const { appointment_id, rating, comment } = req.body;
+
+        if (!appointment_id || !rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ error: 'Valid appointment_id and rating (1-5) required' });
+        }
+
+        // Check appointment belongs to this customer and is completed
+        const booking = await Booking.findById(appointment_id);
+        if (!booking || booking.customer_id !== req.user.id) {
+            return res.status(403).json({ error: 'Not your appointment' });
+        }
+        if (booking.status !== 'completed') {
+            return res.status(400).json({ error: 'Can only review completed appointments' });
+        }
+
+        // Check if already reviewed
+        const alreadyReviewed = await Review.existsForAppointment(appointment_id);
+        if (alreadyReviewed) {
+            return res.status(400).json({ error: 'Already reviewed this appointment' });
+        }
+
+        const reviewId = await Review.create({
+            appointment_id,
+            customer_id: req.user.id,
+            provider_id: booking.provider_id,
+            rating,
+            comment
+        });
+
+        res.status(201).json({ message: 'Review submitted', reviewId });
+    } catch (error) {
+        console.error('Submit review error:', error);
+        res.status(500).json({ error: 'Failed to submit review' });
+    }
+});
+
+// ========================
+// CUSTOMER QUEUE STATUS
+// ========================
+
+// Get customer's queue position for today
+router.get('/queue/status', authenticate, requireRole('customer'), async (req, res) => {
+    try {
+        // Get customer's today bookings
+        const [myBookings] = await db.execute(
+            `SELECT a.*, s.service_name, p.shop_name, 
+             (SELECT COUNT(*) FROM appointments 
+              WHERE provider_id = a.provider_id AND booking_date = a.booking_date 
+              AND status = 'pending' AND queue_number < a.queue_number) as people_ahead,
+             (SELECT token_number FROM appointments 
+              WHERE provider_id = a.provider_id AND booking_date = a.booking_date 
+              AND status = 'confirmed' LIMIT 1) as current_serving_token
+             FROM appointments a
+             JOIN services s ON a.service_id = s.id
+             JOIN providers p ON a.provider_id = p.id
+             WHERE a.customer_id = ? AND DATE(a.booking_date) = CURDATE()
+             AND a.status IN ('pending', 'confirmed')
+             ORDER BY a.booking_date, a.slot_time`,
+            [req.user.id]
+        );
+
+        res.json({ bookings: myBookings });
+    } catch (error) {
+        console.error('Queue status error:', error);
+        res.status(500).json({ error: 'Failed to fetch queue status' });
+    }
+});
+
 module.exports = router;
+
