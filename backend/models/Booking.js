@@ -6,14 +6,22 @@ class Booking {
   static async create(bookingData) {
     const { customer_id, provider_id, service_id, booking_date, slot_time, locked_price } = bookingData;
     const token_number = `TKN-${Date.now().toString(36).toUpperCase()}`;
-    
-    const [result] = await db.execute(
-      `INSERT INTO appointments (customer_id, provider_id, service_id, token_number, booking_date, slot_time, locked_price) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [customer_id, provider_id, service_id, token_number, booking_date, slot_time, locked_price]
+
+    // Auto-assign queue number for the day
+    const [queueCount] = await db.execute(
+      `SELECT COUNT(*) as count FROM appointments 
+       WHERE provider_id = ? AND booking_date = ? AND status != 'cancelled'`,
+      [provider_id, booking_date]
     );
-    
-    return { id: result.insertId, token_number };
+    const queue_number = (queueCount[0].count || 0) + 1;
+
+    const [result] = await db.execute(
+      `INSERT INTO appointments (customer_id, provider_id, service_id, token_number, booking_date, slot_time, locked_price, queue_number) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [customer_id, provider_id, service_id, token_number, booking_date, slot_time, locked_price, queue_number]
+    );
+
+    return { id: result.insertId, token_number, queue_number };
   }
 
   // Get booking by ID
