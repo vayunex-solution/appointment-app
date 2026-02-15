@@ -1,18 +1,34 @@
 require('dotenv').config();
-const fetch = require('node-fetch');
+const db = require('./config/db');
 (async () => {
-  const l = await fetch('http://localhost:5000/api/auth/login', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier: 'yashkr4748@gmail.com', password: 'yash2002' })
-  });
-  const d = await l.json();
-  const q = await fetch('http://localhost:5000/api/provider/queue/today', {
-    headers: { 'Authorization': 'Bearer ' + d.token }
-  });
-  const qd = await q.json();
-  console.log('STATUS:', q.status);
-  console.log('QUEUE COUNT:', qd.queue?.length);
-  console.log('STATS:', JSON.stringify(qd.stats));
-  if (qd.queue) qd.queue.forEach(t => console.log(t.id + '|' + t.token_number + '|' + t.status + '|' + t.customer_name));
+  // Find the customer with running/pending bookings
+  const [custs] = await db.execute(
+    `SELECT DISTINCT a.customer_id, u.name, u.mobile
+     FROM appointments a
+     JOIN users u ON a.customer_id = u.id
+     WHERE a.status IN ('pending','running') AND a.booking_date >= CURDATE()
+     LIMIT 5`
+  );
+  console.log('ACTIVE CUSTOMERS:');
+  custs.forEach(c => console.log('  ID:' + c.customer_id + ' ' + c.name + ' ' + c.mobile));
+  
+  if (custs.length > 0) {
+    const custId = custs[0].customer_id;
+    console.log('\nTESTING getCustomerQueueStatus for customer ID:', custId);
+    
+    const QueueEngine = require('./services/QueueEngine');
+    const result = await QueueEngine.getCustomerQueueStatus(custId);
+    console.log('RESULT COUNT:', result.length);
+    result.forEach(t => {
+      console.log('  TOKEN:', t.token_number);
+      console.log('  STATUS:', t.status);
+      console.log('  SHOP:', t.shop_name);
+      console.log('  AHEAD:', t.tokens_ahead);
+      console.log('  WAIT:', t.estimated_wait_minutes + 'min');
+      console.log('  MY_TURN:', t.is_my_turn);
+      console.log('  SERVING:', t.current_serving?.token_number || 'none');
+      console.log('  ---');
+    });
+  }
   process.exit();
 })();

@@ -373,7 +373,7 @@ class QueueEngine {
        JOIN services s ON a.service_id = s.id
        JOIN providers p ON a.provider_id = p.id
        JOIN users u_provider ON p.user_id = u_provider.id
-       WHERE a.customer_id = ? AND a.booking_date = CURDATE()
+       WHERE a.customer_id = ? AND a.booking_date >= CURDATE()
        AND a.status IN ('pending', 'running')
        ORDER BY a.queue_position ASC`,
       [customerId]
@@ -385,17 +385,16 @@ class QueueEngine {
       // Count tokens ahead (pending with lower queue_position)
       const [ahead] = await db.execute(
         `SELECT COUNT(*) as tokens_ahead FROM appointments
-         WHERE provider_id = ? AND booking_date = CURDATE()
+         WHERE provider_id = ? AND booking_date = ?
          AND status = 'pending' AND queue_position < ?`,
-        [token.provider_id, token.queue_position]
+        [token.provider_id, token.booking_date, token.queue_position]
       );
 
-      // Current running token for this provider
       const [running] = await db.execute(
         `SELECT token_number, queue_position FROM appointments
-         WHERE provider_id = ? AND booking_date = CURDATE() AND status = 'running'
+         WHERE provider_id = ? AND booking_date = ? AND status = 'running'
          LIMIT 1`,
-        [token.provider_id]
+        [token.provider_id, token.booking_date]
       );
 
       // Get avg service time
