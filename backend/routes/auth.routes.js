@@ -28,4 +28,7 @@ router.post('/reset-password', authController.resetPassword);
 // Get current user profile (protected)
 router.get('/profile', authenticate, authController.getProfile);
 
+// Google Sign-In
+router.post('/google', authController.googleLogin);
+
 module.exports = router;

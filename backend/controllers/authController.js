@@ -3,6 +3,9 @@ const Provider = require('../models/Provider');
 const db = require('../config/db');
 const { sendEmail, emailTemplates } = require('../config/smtp');
 const { generateToken } = require('../middleware/auth');
+const { OAuth2Client } = require('google-auth-library');
+const crypto = require('crypto');
+const googleClient = new OAuth2Client();
 
 // Store verification codes temporarily (In production, use Redis)
 const verificationCodes = new Map();
@@ -241,6 +244,91 @@ exports.getProfile = async (req, res) => {
         res.json({ user });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+};
+
+// Google Sign-In
+exports.googleLogin = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+        if (!idToken) {
+            return res.status(400).json({ error: 'Google ID token is required' });
+        }
+
+        // Verify Google token
+        const ticket = await googleClient.verifyIdToken({
+            idToken,
+            // audience is optional — verifies any Google client
+        });
+        const payload = ticket.getPayload();
+        const { email, name, sub: googleId } = payload;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email not available from Google account' });
+        }
+
+        // Check if user already exists
+        let user = await User.findByEmail(email);
+
+        if (user) {
+            // Existing user — log in
+            if (user.is_blocked) {
+                return res.status(403).json({ error: 'Account is blocked. Contact support.' });
+            }
+
+            await logLoginAttempt(user.id, req.ip, 'success', 'Google Sign-In');
+            const token = generateToken(user.id);
+
+            return res.json({
+                message: 'Login successful',
+                token,
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    mobile: user.mobile,
+                    role: user.role,
+                    is_verified: user.is_verified,
+                    is_blocked: user.is_blocked
+                }
+            });
+        }
+
+        // New user — auto-register as customer
+        const randomPassword = crypto.randomBytes(16).toString('hex');
+        const userId = await User.create({
+            name: name || 'Google User',
+            email,
+            mobile: '',
+            password: randomPassword,
+            role: 'customer'
+        });
+
+        // Auto-verify since Google already verified the email
+        await User.setVerified(userId);
+
+        await logLoginAttempt(userId, req.ip, 'success', 'Google Sign-In (new user)');
+        const token = generateToken(userId);
+
+        const newUser = await User.findById(userId);
+
+        res.status(201).json({
+            message: 'Account created via Google',
+            token,
+            isNewUser: true,
+            user: {
+                id: newUser.id,
+                name: newUser.name,
+                email: newUser.email,
+                mobile: newUser.mobile,
+                role: newUser.role,
+                is_verified: newUser.is_verified,
+                is_blocked: newUser.is_blocked
+            }
+        });
+    } catch (error) {
+        console.error('Google login error:', error);
+        res.status(500).json({ error: 'Google authentication failed' });
     }
 };
 

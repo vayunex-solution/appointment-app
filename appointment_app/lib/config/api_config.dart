@@ -14,6 +14,7 @@ class ApiConfig {
   static const String forgotPassword = '$baseUrl/auth/forgot-password';
   static const String resetPassword = '$baseUrl/auth/reset-password';
   static const String profile = '$baseUrl/auth/profile';
+  static const String googleLogin = '$baseUrl/auth/google';
   
   // Provider endpoints
   static const String providerProfile = '$baseUrl/provider/profile';
