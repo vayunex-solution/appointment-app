@@ -8,7 +8,6 @@ class Booking {
    */
   static async create(bookingData) {
     const { customer_id, provider_id, service_id, booking_date, slot_time, locked_price } = bookingData;
-    const token_number = `TKN-${Date.now().toString(36).toUpperCase()}`;
 
     const connection = await db.getConnection();
     try {
@@ -37,6 +36,9 @@ class Booking {
       );
 
       const queue_position = maxPos[0].max_pos + 1;
+      
+      // Sequential token: TKN-01, TKN-02, TKN-03...
+      const token_number = `TKN-${queue_position.toString().padStart(2, '0')}`;
 
       const [result] = await connection.execute(
         `INSERT INTO appointments 
