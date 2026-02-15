@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
+import '../../services/biometric_service.dart';
 import '../../config/theme.dart';
 import 'register_screen.dart';
 
@@ -42,7 +43,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (success && mounted) {
-      _navigateByRole(authProvider);
+      // Show biometric enable popup if device supports it and not already enabled
+      await _showBiometricEnableDialog();
+      if (mounted) _navigateByRole(authProvider);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -50,6 +53,76 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: AppTheme.errorColor,
         ),
       );
+    }
+  }
+
+  Future<void> _showBiometricEnableDialog() async {
+    final isAvailable = await BiometricService.isAvailable();
+    final alreadyEnabled = await BiometricService.isEnabled();
+    if (!isAvailable || alreadyEnabled || !mounted) return;
+
+    final shouldEnable = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.fingerprint, color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Enable Fingerprint Login?',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Sign in faster next time using your fingerprint or face unlock.',
+          style: TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not Now', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.fingerprint, size: 20),
+            label: const Text('Enable'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldEnable == true) {
+      await BiometricService.saveCredentials(
+        _identifierController.text.trim(),
+        _passwordController.text,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Fingerprint login enabled!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     }
   }
 
