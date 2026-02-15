@@ -29,7 +29,7 @@ router.post('/', bookingValidation, async (req, res) => {
         }
 
         // Create booking
-        const { id, token_number } = await Booking.create({
+        const bookingResult = await Booking.create({
             customer_id: req.user.id,
             provider_id,
             service_id,
@@ -38,6 +38,13 @@ router.post('/', bookingValidation, async (req, res) => {
             locked_price: service.rate
         });
 
+        // Handle duplicate slot error from atomic create
+        if (bookingResult.error) {
+            return res.status(400).json({ error: bookingResult.error });
+        }
+
+        const { id, token_number, queue_position } = bookingResult;
+
         // Send confirmation email
         const user = await User.findById(req.user.id);
         const providerData = await require('../config/db').execute(
@@ -45,22 +52,26 @@ router.post('/', bookingValidation, async (req, res) => {
             [provider_id]
         );
 
-        await sendEmail(
-            user.email,
-            'Booking Confirmed',
-            emailTemplates.bookingConfirmation(user.name, {
-                token: token_number,
-                serviceName: service.service_name,
-                providerName: providerData[0][0]?.shop_name,
-                date: booking_date,
-                time: slot_time,
-                amount: service.rate
-            })
-        );
+        try {
+            await sendEmail(
+                user.email,
+                'Booking Confirmed',
+                emailTemplates.bookingConfirmation(user.name, {
+                    token: token_number,
+                    serviceName: service.service_name,
+                    providerName: providerData[0][0]?.shop_name,
+                    date: booking_date,
+                    time: slot_time,
+                    amount: service.rate
+                })
+            );
+        } catch (emailErr) {
+            console.error('Email send failed (non-blocking):', emailErr.message);
+        }
 
         res.status(201).json({
             message: 'Booking confirmed',
-            booking: { id, token_number, date: booking_date, time: slot_time }
+            booking: { id, token_number, queue_position, date: booking_date, time: slot_time }
         });
     } catch (error) {
         console.error('Booking error:', error);
