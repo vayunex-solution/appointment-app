@@ -34,9 +34,42 @@ class _QueueManagementScreenState extends State<QueueManagementScreen> {
           _currentRunning = data['currentRunning'];
           _stats = Map<String, dynamic>.from(data['stats'] ?? {});
           _avgServiceTime = data['avgServiceTime'] ?? 900;
+
+          // Fallback: if stats empty but queue has items, calculate from queue
+          if (_stats.isEmpty && _queue.isNotEmpty) {
+            _stats = {
+              'pending_count': _queue.where((t) => t['status'] == 'pending').length,
+              'running_count': _queue.where((t) => t['status'] == 'running' || t['status'] == 'confirmed').length,
+              'completed_count': _queue.where((t) => t['status'] == 'completed').length,
+              'skipped_count': _queue.where((t) => t['status'] == 'skipped').length,
+              'total_count': _queue.length,
+            };
+            // Fallback: currentRunning from queue
+            _currentRunning ??= _queue.cast<Map<String, dynamic>?>().firstWhere(
+              (t) => t?['status'] == 'running' || t?['status'] == 'confirmed',
+              orElse: () => null,
+            );
+          }
         });
+      } else {
+        // Show error to user so they know what's wrong
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('API Error: ${result['error'] ?? 'Failed to load queue'}'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
     setState(() => _isLoading = false);
   }
 
