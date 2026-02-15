@@ -87,7 +87,7 @@ class Booking {
     return rows;
   }
 
-  // Get provider bookings
+  // Get provider bookings (sorted: running → pending → completed → skipped → cancelled)
   static async getByProvider(providerId) {
     const [rows] = await db.execute(
       `SELECT a.*, s.service_name, u.name as customer_name, u.mobile as customer_mobile
@@ -95,7 +95,17 @@ class Booking {
        JOIN services s ON a.service_id = s.id
        JOIN users u ON a.customer_id = u.id
        WHERE a.provider_id = ?
-       ORDER BY a.booking_date DESC, a.slot_time DESC`,
+       ORDER BY 
+         a.booking_date DESC,
+         CASE a.status
+           WHEN 'running' THEN 0
+           WHEN 'pending' THEN 1
+           WHEN 'confirmed' THEN 2
+           WHEN 'completed' THEN 3
+           WHEN 'skipped' THEN 4
+           WHEN 'cancelled' THEN 5
+         END,
+         a.queue_position ASC`,
       [providerId]
     );
     return rows;
