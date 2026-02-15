@@ -46,8 +46,9 @@ class _ProviderBookingsScreenState extends State<ProviderBookingsScreen> {
                 children: [
                   _FilterChip(label: 'All', value: 'all', selected: _statusFilter, onSelect: (v) => setState(() => _statusFilter = v)),
                   _FilterChip(label: 'Pending', value: 'pending', selected: _statusFilter, onSelect: (v) => setState(() => _statusFilter = v)),
-                  _FilterChip(label: 'Confirmed', value: 'confirmed', selected: _statusFilter, onSelect: (v) => setState(() => _statusFilter = v)),
+                  _FilterChip(label: 'Running', value: 'running', selected: _statusFilter, onSelect: (v) => setState(() => _statusFilter = v)),
                   _FilterChip(label: 'Completed', value: 'completed', selected: _statusFilter, onSelect: (v) => setState(() => _statusFilter = v)),
+                  _FilterChip(label: 'Skipped', value: 'skipped', selected: _statusFilter, onSelect: (v) => setState(() => _statusFilter = v)),
                   _FilterChip(label: 'Cancelled', value: 'cancelled', selected: _statusFilter, onSelect: (v) => setState(() => _statusFilter = v)),
                 ],
               ),
@@ -134,8 +135,9 @@ class _BookingCard extends StatelessWidget {
   Color _statusColor(String status) {
     switch (status) {
       case 'pending': return Colors.orange;
-      case 'confirmed': return AppTheme.primaryColor;
+      case 'confirmed': case 'running': return AppTheme.primaryColor;
       case 'completed': return AppTheme.successColor;
+      case 'skipped': return Colors.deepOrange;
       case 'cancelled': return Colors.red;
       default: return Colors.grey;
     }
@@ -144,8 +146,9 @@ class _BookingCard extends StatelessWidget {
   IconData _statusIcon(String status) {
     switch (status) {
       case 'pending': return Icons.pending;
-      case 'confirmed': return Icons.check_circle;
+      case 'confirmed': case 'running': return Icons.play_circle_fill;
       case 'completed': return Icons.done_all;
+      case 'skipped': return Icons.skip_next;
       case 'cancelled': return Icons.cancel;
       default: return Icons.help;
     }
@@ -253,29 +256,31 @@ class _BookingCard extends StatelessWidget {
               ),
             ],
 
-            // Action Buttons (show only for pending/confirmed)
-            if (status == 'pending' || status == 'confirmed') ...[
+            // Action Buttons
+            if (status == 'pending' || status == 'running') ...[
               const SizedBox(height: 12),
               Row(
                 children: [
-                  if (status == 'pending')
+                  if (status == 'pending') ...[
                     Expanded(
                       child: ElevatedButton.icon(
-                        icon: const Icon(Icons.check, size: 16),
-                        label: const Text('Confirm'),
+                        icon: const Icon(Icons.play_arrow, size: 16),
+                        label: const Text('Serve Now'),
                         style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor),
                         onPressed: () async {
                           final svc = Provider.of<ProviderService>(context, listen: false);
-                          final success = await svc.updateBookingStatus(booking['id'], 'confirmed');
+                          final success = await svc.updateBookingStatus(booking['id'], 'running');
                           if (success && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Booking confirmed!'), backgroundColor: Colors.green),
+                              const SnackBar(content: Text('Now serving!'), backgroundColor: Colors.green),
                             );
                           }
                         },
                       ),
                     ),
-                  if (status == 'confirmed') ...[
+                    const SizedBox(width: 8),
+                  ],
+                  if (status == 'running') ...[
                     Expanded(
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.done_all, size: 16),
@@ -292,8 +297,25 @@ class _BookingCard extends StatelessWidget {
                         },
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.skip_next, size: 16),
+                        label: const Text('Skip'),
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.orange, side: const BorderSide(color: Colors.orange)),
+                        onPressed: () async {
+                          final svc = Provider.of<ProviderService>(context, listen: false);
+                          final success = await svc.updateBookingStatus(booking['id'], 'skipped');
+                          if (success && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Token skipped'), backgroundColor: Colors.orange),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                   ],
-                  const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.cancel, size: 16),

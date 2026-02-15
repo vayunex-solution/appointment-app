@@ -76,11 +76,14 @@ class _BookingCard extends StatelessWidget {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'confirmed':
+      case 'running':
         return AppTheme.successColor;
       case 'pending':
         return Colors.orange;
       case 'completed':
         return Colors.blue;
+      case 'skipped':
+        return Colors.deepOrange;
       case 'cancelled':
         return Colors.red;
       default:
@@ -176,7 +179,7 @@ class _BookingCard extends StatelessWidget {
                     color: AppTheme.successColor,
                   ),
                 ),
-                if (status == 'pending' || status == 'confirmed')
+                if (status == 'pending' || status == 'confirmed' || status == 'running')
                   TextButton(
                     onPressed: () async {
                       final confirm = await showDialog<bool>(

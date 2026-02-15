@@ -207,6 +207,60 @@ router.get('/wallet', async (req, res) => {
 });
 
 // ========================
+// BOOKING STATUS UPDATE (used by provider_bookings_screen)
+// ========================
+
+router.patch('/bookings/:id/status', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const { status } = req.body;
+        const bookingId = parseInt(req.params.id);
+
+        if (!['running', 'completed', 'skipped', 'cancelled'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+
+        const QueueEngine = require('../services/QueueEngine');
+        let result;
+
+        switch (status) {
+            case 'running':
+                // Set started_at and update queue_stats
+                await db.execute(
+                    `UPDATE appointments SET status = 'running', started_at = NOW() WHERE id = ? AND provider_id = ?`,
+                    [bookingId, provider.id]
+                );
+                await db.execute(
+                    `INSERT INTO queue_stats (provider_id, queue_date, current_running_token_id, last_updated)
+                     VALUES (?, CURDATE(), ?, NOW())
+                     ON DUPLICATE KEY UPDATE current_running_token_id = ?, last_updated = NOW()`,
+                    [provider.id, bookingId, bookingId]
+                );
+                result = { success: true };
+                break;
+            case 'completed':
+                result = await QueueEngine.completeToken(provider.id, bookingId);
+                break;
+            case 'skipped':
+                result = await QueueEngine.skipToken(provider.id, bookingId);
+                break;
+            case 'cancelled':
+                result = await QueueEngine.cancelToken(provider.id, bookingId);
+                break;
+        }
+
+        if (result?.error) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.json({ message: `Booking ${status}` });
+    } catch (error) {
+        console.error('Booking status update error:', error);
+        res.status(500).json({ error: 'Failed to update booking status' });
+    }
+});
+
+// ========================
 // QUEUE MANAGEMENT (QueueEngine)
 // ========================
 const QueueEngine = require('../services/QueueEngine');
