@@ -3,6 +3,9 @@ class ApiConfig {
   // Production API URL
   static const String baseUrl = 'https://api.booknex.vayunexsolution.com/api';
   
+  // Local API URL (for testing)
+  // static const String baseUrl = 'http://localhost:5000/api';
+  
   // Auth endpoints
   static const String registerCustomer = '$baseUrl/auth/register/customer';
   static const String registerProvider = '$baseUrl/auth/register/provider';
