@@ -12,7 +12,7 @@ class QueueEngine {
   // ========================================
   // ATOMIC QUEUE POSITION ASSIGNMENT
   // ========================================
-  
+
   /**
    * Assign next queue position for a provider on a given date.
    * Uses transaction + FOR UPDATE lock to prevent race conditions.
@@ -184,9 +184,9 @@ class QueueEngine {
       );
 
       await connection.commit();
-      return { 
-        completed: true, 
-        tokenId, 
+      return {
+        completed: true,
+        tokenId,
         serviceDuration,
         avgServiceTime,
         customerId: token[0].customer_id
@@ -309,7 +309,7 @@ class QueueEngine {
        FROM appointments a
        JOIN users u ON a.customer_id = u.id
        JOIN services s ON a.service_id = s.id
-       WHERE a.provider_id = ? AND a.booking_date = CURDATE()
+       WHERE a.provider_id = ? AND a.booking_date >= CURDATE()
        ORDER BY 
          CASE a.status 
            WHEN 'running' THEN 0
@@ -332,7 +332,7 @@ class QueueEngine {
          COUNT(CASE WHEN status = 'skipped' THEN 1 END) as skipped_count,
          COUNT(*) as total_count
        FROM appointments 
-       WHERE provider_id = ? AND booking_date = CURDATE()`,
+       WHERE provider_id = ? AND booking_date >= CURDATE()`,
       [providerId]
     );
 
@@ -408,8 +408,8 @@ class QueueEngine {
       const tokensAhead = token.status === 'running' ? 0 : ahead[0].tokens_ahead;
       const avgTime = avgRow[0]?.average_service_time || 900;
       // Add 1 for currently running token if exists
-      const totalAhead = running.length > 0 && token.status !== 'running' 
-        ? tokensAhead + 1 
+      const totalAhead = running.length > 0 && token.status !== 'running'
+        ? tokensAhead + 1
         : tokensAhead;
 
       enriched.push({
