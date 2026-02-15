@@ -178,22 +178,8 @@ router.get('/bookings', async (req, res) => {
     }
 });
 
-// Update booking status
-router.patch('/bookings/:id/status', async (req, res) => {
-    try {
-        const { status } = req.body;
-        const validStatuses = ['confirmed', 'completed', 'cancelled'];
-
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({ error: 'Invalid status' });
-        }
-
-        await Booking.updateStatus(req.params.id, status);
-        res.json({ message: 'Booking status updated' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update booking' });
-    }
-});
+// NOTE: Booking status update is handled below (line ~213) with QueueEngine logic.
+// Supports: running, completed, skipped, cancelled
 
 // Get wallet balance
 router.get('/wallet', async (req, res) => {
