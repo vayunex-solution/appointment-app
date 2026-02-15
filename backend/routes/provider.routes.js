@@ -207,57 +207,58 @@ router.get('/wallet', async (req, res) => {
 });
 
 // ========================
-// QUEUE MANAGEMENT
+// QUEUE MANAGEMENT (QueueEngine)
 // ========================
+const QueueEngine = require('../services/QueueEngine');
 
-// Get today's queue
+// Get today's queue (full data)
 router.get('/queue/today', async (req, res) => {
     try {
         const provider = await Provider.findByUserId(req.user.id);
-        const [rows] = await require('../config/db').execute(
-            `SELECT a.*, s.service_name, u.name as customer_name, u.mobile as customer_mobile
-             FROM appointments a
-             JOIN services s ON a.service_id = s.id
-             JOIN users u ON a.customer_id = u.id
-             WHERE a.provider_id = ? AND DATE(a.booking_date) = CURDATE()
-             AND a.status != 'cancelled'
-             ORDER BY a.queue_number ASC, a.slot_time ASC`,
-            [provider.id]
-        );
-
-        // Find currently serving
-        const serving = rows.find(r => r.status === 'confirmed');
-        
-        res.json({ 
-            queue: rows, 
-            currentServing: serving || null,
-            totalInQueue: rows.filter(r => r.status === 'pending').length,
-            completed: rows.filter(r => r.status === 'completed').length
-        });
+        const data = await QueueEngine.getProviderQueue(provider.id);
+        res.json(data);
     } catch (error) {
-        console.error('Queue error:', error);
+        console.error('Queue fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch queue' });
     }
 });
 
-// Serve next token (mark as confirmed/serving)
+// Call next token (strict FIFO)
+router.patch('/queue/call-next', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const result = await QueueEngine.callNextToken(provider.id);
+
+        if (!result) {
+            return res.json({ message: 'Queue is empty', queue_empty: true });
+        }
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        // Get updated queue
+        const queueData = await QueueEngine.getProviderQueue(provider.id);
+        res.json({ message: 'Token called', calledToken: result, ...queueData });
+    } catch (error) {
+        console.error('Call next error:', error);
+        res.status(500).json({ error: 'Failed to call next token' });
+    }
+});
+
+// Serve specific token by ID (force serve)
 router.patch('/queue/:id/serve', async (req, res) => {
     try {
         const provider = await Provider.findByUserId(req.user.id);
-        const booking = await Booking.findById(req.params.id);
-
-        if (!booking || booking.provider_id !== provider.id) {
-            return res.status(404).json({ error: 'Booking not found' });
+        const result = await QueueEngine.callNextToken(provider.id);
+        
+        if (result?.error) {
+            return res.status(400).json({ error: result.error });
         }
 
-        await require('../config/db').execute(
-            `UPDATE appointments SET status = 'confirmed', served_at = NOW() WHERE id = ?`,
-            [req.params.id]
-        );
-        
-        res.json({ message: 'Now serving this customer' });
+        const queueData = await QueueEngine.getProviderQueue(provider.id);
+        res.json({ message: 'Now serving', ...queueData });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update queue' });
+        res.status(500).json({ error: 'Failed to serve token' });
     }
 });
 
@@ -265,43 +266,71 @@ router.patch('/queue/:id/serve', async (req, res) => {
 router.patch('/queue/:id/complete', async (req, res) => {
     try {
         const provider = await Provider.findByUserId(req.user.id);
-        const booking = await Booking.findById(req.params.id);
+        const result = await QueueEngine.completeToken(provider.id, parseInt(req.params.id));
 
-        if (!booking || booking.provider_id !== provider.id) {
-            return res.status(404).json({ error: 'Booking not found' });
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
         }
 
-        await require('../config/db').execute(
-            `UPDATE appointments SET status = 'completed', completed_at = NOW() WHERE id = ?`,
-            [req.params.id]
-        );
-        
-        res.json({ message: 'Service completed' });
+        const queueData = await QueueEngine.getProviderQueue(provider.id);
+        res.json({ message: 'Token completed', result, ...queueData });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to complete' });
+        console.error('Complete error:', error);
+        res.status(500).json({ error: 'Failed to complete token' });
     }
 });
 
-// Skip / No-show
+// Skip token (no-show)
 router.patch('/queue/:id/skip', async (req, res) => {
     try {
         const provider = await Provider.findByUserId(req.user.id);
-        const booking = await Booking.findById(req.params.id);
+        const result = await QueueEngine.skipToken(provider.id, parseInt(req.params.id));
 
-        if (!booking || booking.provider_id !== provider.id) {
-            return res.status(404).json({ error: 'Booking not found' });
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
         }
 
-        await require('../config/db').execute(
-            `UPDATE appointments SET status = 'cancelled' WHERE id = ?`,
-            [req.params.id]
-        );
-        
-        res.json({ message: 'Customer skipped' });
+        const queueData = await QueueEngine.getProviderQueue(provider.id);
+        res.json({ message: 'Token skipped', result, ...queueData });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to skip' });
+        res.status(500).json({ error: 'Failed to skip token' });
+    }
+});
+
+// Cancel token
+router.patch('/queue/:id/cancel', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const result = await QueueEngine.cancelToken(provider.id, parseInt(req.params.id));
+
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        const queueData = await QueueEngine.getProviderQueue(provider.id);
+        res.json({ message: 'Token cancelled', result, ...queueData });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to cancel token' });
+    }
+});
+
+// Toggle priority flag
+router.patch('/queue/:id/priority', async (req, res) => {
+    try {
+        const provider = await Provider.findByUserId(req.user.id);
+        const result = await QueueEngine.togglePriority(provider.id, parseInt(req.params.id));
+
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        const queueData = await QueueEngine.getProviderQueue(provider.id);
+        res.json({ message: 'Priority updated', result, ...queueData });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to toggle priority' });
     }
 });
 
 module.exports = router;
+
 

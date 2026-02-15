@@ -183,31 +183,15 @@ router.post('/reviews', authenticate, requireRole('customer'), async (req, res) 
 });
 
 // ========================
-// CUSTOMER QUEUE STATUS
+// CUSTOMER QUEUE STATUS (QueueEngine)
 // ========================
+const QueueEngine = require('../services/QueueEngine');
 
-// Get customer's queue position for today
+// Get customer's queue position for today (with distance + estimated wait)
 router.get('/queue/status', authenticate, requireRole('customer'), async (req, res) => {
     try {
-        // Get customer's today bookings
-        const [myBookings] = await db.execute(
-            `SELECT a.*, s.service_name, p.shop_name, 
-             (SELECT COUNT(*) FROM appointments 
-              WHERE provider_id = a.provider_id AND booking_date = a.booking_date 
-              AND status = 'pending' AND queue_number < a.queue_number) as people_ahead,
-             (SELECT token_number FROM appointments 
-              WHERE provider_id = a.provider_id AND booking_date = a.booking_date 
-              AND status = 'confirmed' LIMIT 1) as current_serving_token
-             FROM appointments a
-             JOIN services s ON a.service_id = s.id
-             JOIN providers p ON a.provider_id = p.id
-             WHERE a.customer_id = ? AND DATE(a.booking_date) = CURDATE()
-             AND a.status IN ('pending', 'confirmed')
-             ORDER BY a.booking_date, a.slot_time`,
-            [req.user.id]
-        );
-
-        res.json({ bookings: myBookings });
+        const tokens = await QueueEngine.getCustomerQueueStatus(req.user.id);
+        res.json({ bookings: tokens });
     } catch (error) {
         console.error('Queue status error:', error);
         res.status(500).json({ error: 'Failed to fetch queue status' });
@@ -215,4 +199,5 @@ router.get('/queue/status', authenticate, requireRole('customer'), async (req, r
 });
 
 module.exports = router;
+
 

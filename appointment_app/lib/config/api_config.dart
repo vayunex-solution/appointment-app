@@ -30,6 +30,7 @@ class ApiConfig {
 
   // Queue endpoints
   static const String providerQueue = '$baseUrl/provider/queue/today';
+  static const String providerCallNext = '$baseUrl/provider/queue/call-next';
   static const String customerQueueStatus = '$baseUrl/customer/queue/status';
 
   // Review endpoints  
