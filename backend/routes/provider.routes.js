@@ -5,6 +5,7 @@ const { serviceValidation } = require('../middleware/validator');
 const Provider = require('../models/Provider');
 const Service = require('../models/Service');
 const Booking = require('../models/Booking');
+const db = require('../config/db');
 
 // All routes require authentication + verified + provider role
 router.use(authenticate, requireVerified, requireRole('provider'));
