@@ -22,10 +22,10 @@ router.post('/', bookingValidation, async (req, res) => {
             return res.status(400).json({ error: 'Slot not available' });
         }
 
-        // Get service for locked price
+        // Get service for locked price and boundary check
         const service = await Service.findById(service_id);
-        if (!service) {
-            return res.status(404).json({ error: 'Service not found' });
+        if (!service || service.provider_id !== provider_id) {
+            return res.status(404).json({ error: 'Service not found or does not belong to the selected provider' });
         }
 
         // Create booking

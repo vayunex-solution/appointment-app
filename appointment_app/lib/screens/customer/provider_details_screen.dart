@@ -28,6 +28,12 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    Provider.of<CustomerService>(context, listen: false).clearSelection();
+    super.dispose();
+  }
+
   void _fetchSlots() {
     if (_providerId != null) {
       final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';

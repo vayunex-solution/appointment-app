@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
+import '../../services/customer_service.dart';
 import '../../config/theme.dart';
 import 'verify_email_screen.dart';
 
@@ -18,11 +19,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _mobileController = TextEditingController();
   final _passwordController = TextEditingController();
   final _shopNameController = TextEditingController();
-  final _categoryController = TextEditingController();
   final _locationController = TextEditingController();
   
+  String? _selectedCategory;
   bool _obscurePassword = true;
   bool _isProvider = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<CustomerService>(context, listen: false).fetchCategories();
+    });
+  }
 
   @override
   void dispose() {
@@ -31,7 +40,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _mobileController.dispose();
     _passwordController.dispose();
     _shopNameController.dispose();
-    _categoryController.dispose();
     _locationController.dispose();
     super.dispose();
   }
@@ -50,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         mobile: _mobileController.text.trim(),
         password: _passwordController.text,
         shopName: _shopNameController.text.trim(),
-        category: _categoryController.text.trim(),
+        category: _selectedCategory ?? '',
         location: _locationController.text.trim(),
       );
     } else {
@@ -222,13 +230,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     validator: (v) => _isProvider && v?.isEmpty == true ? 'Required' : null,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _categoryController,
-                    decoration: const InputDecoration(
-                      hintText: 'Category (e.g., Salon, Clinic)',
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    validator: (v) => _isProvider && v?.isEmpty == true ? 'Required' : null,
+                  Consumer<CustomerService>(
+                    builder: (context, service, _) {
+                      final categories = service.categories.map((c) => c['name'] as String).toList();
+                      
+                      if (_selectedCategory != null && !categories.contains(_selectedCategory)) {
+                        _selectedCategory = null;
+                      }
+
+                      return DropdownButtonFormField<String>(
+                        value: _selectedCategory,
+                        decoration: const InputDecoration(
+                          hintText: 'Category (e.g., Salon, Clinic)',
+                          prefixIcon: Icon(Icons.category_outlined),
+                        ),
+                        items: categories.map((cat) {
+                          return DropdownMenuItem(value: cat, child: Text(cat));
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedCategory = value);
+                        },
+                        validator: (value) => _isProvider && value == null ? 'Required' : null,
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   TextFormField(

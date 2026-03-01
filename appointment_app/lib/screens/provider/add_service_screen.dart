@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/provider_service.dart';
+import '../../services/customer_service.dart';
 import '../../config/theme.dart';
 
 class AddServiceScreen extends StatefulWidget {
@@ -18,18 +19,15 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
   final _durationController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  final List<String> _categories = [
-    'Healthcare',
-    'Beauty & Salon',
-    'Fitness',
-    'Education',
-    'Consulting',
-    'Legal',
-    'Home Services',
-    'Other',
-  ];
+  String? _selectedCategory;
 
-  String _selectedCategory = 'Healthcare';
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<CustomerService>(context, listen: false).fetchCategories();
+    });
+  }
 
   @override
   void dispose() {
@@ -48,7 +46,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     
     final success = await provider.addService({
       'service_name': _nameController.text.trim(),
-      'category': _selectedCategory,
+      'category': _selectedCategory ?? '',
       'rate': double.parse(_rateController.text.trim()),
       'duration_minutes': _durationController.text.isNotEmpty
           ? int.parse(_durationController.text.trim())
@@ -105,17 +103,29 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
               const SizedBox(height: 16),
 
               // Category Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                items: _categories.map((cat) {
-                  return DropdownMenuItem(value: cat, child: Text(cat));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _selectedCategory = value!);
+              Consumer<CustomerService>(
+                builder: (context, service, _) {
+                  final categories = service.categories.map((c) => c['name'] as String).toList();
+                  
+                  // Ensure selected category is valid if list updates
+                  if (_selectedCategory != null && !categories.contains(_selectedCategory)) {
+                    _selectedCategory = null;
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    items: categories.map((cat) {
+                      return DropdownMenuItem(value: cat, child: Text(cat));
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedCategory = value);
+                    },
+                    validator: (value) => value == null ? 'Please select a category' : null,
+                  );
                 },
               ),
               const SizedBox(height: 16),

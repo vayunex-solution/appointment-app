@@ -161,3 +161,21 @@ CREATE TABLE IF NOT EXISTS reviews (
     INDEX idx_customer (customer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ===========================================
+-- CATEGORIES TABLE (Dynamic Master Data)
+-- ===========================================
+CREATE TABLE IF NOT EXISTS categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    icon VARCHAR(100) NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO categories (name, icon) VALUES 
+('Salon', 'spa'), 
+('Healthcare', 'medical_services'), 
+('Fitness', 'fitness_center'), 
+('Education', 'school'), 
+('Legal', 'gavel'), 
+('More', 'more_horiz');

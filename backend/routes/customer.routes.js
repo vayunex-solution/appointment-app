@@ -11,17 +11,17 @@ router.get('/providers', async (req, res) => {
     try {
         const { category, location, search } = req.query;
         let providers = await Provider.getAllApproved(category, location);
-        
+
         // Apply search filter
         if (search) {
             const searchLower = search.toLowerCase();
-            providers = providers.filter(p => 
+            providers = providers.filter(p =>
                 p.shop_name.toLowerCase().includes(searchLower) ||
                 p.category.toLowerCase().includes(searchLower) ||
                 p.name.toLowerCase().includes(searchLower)
             );
         }
-        
+
         res.json({ providers });
     } catch (error) {
         console.error('Get providers error:', error);
@@ -36,7 +36,7 @@ router.get('/providers/:id', async (req, res) => {
         if (!provider || !provider.is_approved) {
             return res.status(404).json({ error: 'Provider not found' });
         }
-        
+
         const availability = await Provider.getAvailability(provider.id);
         res.json({ provider, availability });
     } catch (error) {
@@ -85,7 +85,7 @@ router.get('/providers/:id/slots', async (req, res) => {
 
         let currentTime = new Date();
         currentTime.setHours(parseInt(startParts[0]), parseInt(startParts[1]), 0, 0);
-        
+
         const endDateTime = new Date();
         endDateTime.setHours(parseInt(endParts[0]), parseInt(endParts[1]), 0, 0);
 
@@ -117,10 +117,9 @@ router.get('/providers/:id/slots', async (req, res) => {
 router.get('/categories', async (req, res) => {
     try {
         const [rows] = await db.execute(
-            `SELECT DISTINCT category FROM providers WHERE is_approved = 1 ORDER BY category`
+            `SELECT name, icon FROM categories WHERE is_active = 1 ORDER BY name`
         );
-        const categories = rows.map(r => r.category);
-        res.json({ categories });
+        res.json({ categories: rows });
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch categories' });
     }

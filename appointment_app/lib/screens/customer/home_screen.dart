@@ -14,6 +14,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<CustomerService>(context, listen: false).fetchCategories();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = Provider.of<AuthProvider>(context).user;
 
@@ -124,16 +132,34 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             const SizedBox(height: 12),
             SizedBox(
               height: 100,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _CategoryCard(icon: Icons.spa, label: 'Salon'),
-                  _CategoryCard(icon: Icons.medical_services, label: 'Healthcare'),
-                  _CategoryCard(icon: Icons.fitness_center, label: 'Fitness'),
-                  _CategoryCard(icon: Icons.school, label: 'Education'),
-                  _CategoryCard(icon: Icons.gavel, label: 'Legal'),
-                  _CategoryCard(icon: Icons.more_horiz, label: 'More'),
-                ],
+              child: Consumer<CustomerService>(
+                builder: (context, service, _) {
+                  if (service.categories.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: service.categories.length,
+                    itemBuilder: (context, index) {
+                      final cat = service.categories[index];
+                      IconData getIcon(String? iconName) {
+                        switch (iconName) {
+                          case 'spa': return Icons.spa;
+                          case 'medical_services': return Icons.medical_services;
+                          case 'fitness_center': return Icons.fitness_center;
+                          case 'school': return Icons.school;
+                          case 'gavel': return Icons.gavel;
+                          case 'more_horiz': return Icons.more_horiz;
+                          default: return Icons.category;
+                        }
+                      }
+                      return _CategoryCard(
+                        icon: getIcon(cat['icon']),
+                        label: cat['name'] ?? '',
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
