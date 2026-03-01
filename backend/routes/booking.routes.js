@@ -7,6 +7,7 @@ const Service = require('../models/Service');
 const { sendEmail, emailTemplates } = require('../config/smtp');
 const User = require('../models/User');
 const Provider = require('../models/Provider');
+const db = require('../config/db');
 
 // All booking routes require authentication + verified
 router.use(authenticate, requireVerified);
@@ -47,7 +48,7 @@ router.post('/', bookingValidation, async (req, res) => {
 
         // Send confirmation email
         const user = await User.findById(req.user.id);
-        const providerData = await require('../config/db').execute(
+        const providerData = await db.execute(
             'SELECT shop_name FROM providers WHERE id = ?',
             [provider_id]
         );
