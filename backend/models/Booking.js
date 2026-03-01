@@ -37,8 +37,9 @@ class Booking {
 
       const queue_position = maxPos[0].max_pos + 1;
 
-      // Sequential token: TKN-01, TKN-02, TKN-03...
-      const token_number = `TKN-${queue_position.toString().padStart(2, '0')}`;
+      // Globally unique token: TKN-P{providerId}-{YYMMDD}-{seq}
+      const dateStr = booking_date.toString().replace(/-/g, '').slice(2, 8);
+      const token_number = `TKN-P${provider_id}-${dateStr}-${queue_position.toString().padStart(2, '0')}`;
 
       const [result] = await connection.execute(
         `INSERT INTO appointments 
