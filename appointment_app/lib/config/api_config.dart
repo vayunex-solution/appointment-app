@@ -46,4 +46,10 @@ class ApiConfig {
   static const String adminUsers = '$baseUrl/admin/users';
   static const String adminReports = '$baseUrl/admin/reports';
   static const String adminLogs = '$baseUrl/admin/logs';
+
+  // Notification endpoints
+  static const String registerDevice = '$baseUrl/notifications/register-device';
+  static const String notifications = '$baseUrl/notifications';
+  static const String unreadCount = '$baseUrl/notifications/unread-count';
+  static const String readAllNotifications = '$baseUrl/notifications/read-all';
 }

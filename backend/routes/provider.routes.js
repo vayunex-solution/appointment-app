@@ -6,6 +6,7 @@ const Provider = require('../models/Provider');
 const Service = require('../models/Service');
 const Booking = require('../models/Booking');
 const db = require('../config/db');
+const TurnAlertService = require('../services/TurnAlertService');
 
 // All routes require authentication + verified + provider role
 router.use(authenticate, requireVerified, requireRole('provider'));
@@ -224,15 +225,29 @@ router.patch('/bookings/:id/status', async (req, res) => {
                     [provider.id, bookingId, bookingId]
                 );
                 result = { success: true };
+                // Fire push notifications (non-blocking)
+                TurnAlertService.sendUpcomingAlerts(provider.id).catch(e => console.error('Alert error:', e));
                 break;
             case 'completed':
                 result = await QueueEngine.completeToken(provider.id, bookingId);
+                if (!result?.error) {
+                    TurnAlertService.sendCompletionAlert(result.customerId, provider.id).catch(e => console.error('Alert error:', e));
+                    TurnAlertService.sendUpcomingAlerts(provider.id).catch(e => console.error('Alert error:', e));
+                }
                 break;
             case 'skipped':
                 result = await QueueEngine.skipToken(provider.id, bookingId);
+                if (!result?.error) {
+                    TurnAlertService.sendSkipAlert(result.customerId, provider.id, '', 'skipped').catch(e => console.error('Alert error:', e));
+                    TurnAlertService.sendUpcomingAlerts(provider.id).catch(e => console.error('Alert error:', e));
+                }
                 break;
             case 'cancelled':
                 result = await QueueEngine.cancelToken(provider.id, bookingId);
+                if (!result?.error) {
+                    TurnAlertService.sendSkipAlert(result.customerId, provider.id, '', 'cancelled').catch(e => console.error('Alert error:', e));
+                    TurnAlertService.sendUpcomingAlerts(provider.id).catch(e => console.error('Alert error:', e));
+                }
                 break;
         }
 
@@ -276,6 +291,9 @@ router.patch('/queue/call-next', async (req, res) => {
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
+
+        // Fire push notifications (non-blocking)
+        TurnAlertService.sendUpcomingAlerts(provider.id).catch(e => console.error('Alert error:', e));
 
         // Get updated queue
         const queueData = await QueueEngine.getProviderQueue(provider.id);

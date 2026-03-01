@@ -2,6 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const { initFirebase } = require('./config/firebase');
+
+// Initialize Firebase for push notifications
+initFirebase();
 
 // Import routes
 const authRoutes = require('./routes/auth.routes');
@@ -9,6 +13,7 @@ const providerRoutes = require('./routes/provider.routes');
 const customerRoutes = require('./routes/customer.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const adminRoutes = require('./routes/admin.routes');
+const notificationRoutes = require('./routes/notification.routes');
 
 const app = express();
 
@@ -41,6 +46,7 @@ app.use('/api/provider', providerRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

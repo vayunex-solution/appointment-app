@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_provider.dart';
 import '../../services/provider_service.dart';
+import '../../services/notification_api_service.dart';
 import '../../config/theme.dart';
 
 class ProviderDashboardScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
       final svc = Provider.of<ProviderService>(context, listen: false);
       svc.fetchDashboard();
       svc.fetchBookings();
+      Provider.of<NotificationApiService>(context, listen: false).fetchUnreadCount();
     });
   }
 
@@ -30,6 +32,35 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          // Notification bell with badge
+          Consumer<NotificationApiService>(
+            builder: (context, notifService, _) {
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () => Navigator.pushNamed(context, '/notifications'),
+                  ),
+                  if (notifService.unreadCount > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF5722),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          notifService.unreadCount > 99 ? '99+' : '${notifService.unreadCount}',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {

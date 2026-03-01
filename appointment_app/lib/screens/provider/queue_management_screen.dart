@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../config/theme.dart';
 import '../../config/api_config.dart';
 import '../../services/api_service.dart';
@@ -16,11 +17,49 @@ class _QueueManagementScreenState extends State<QueueManagementScreen> {
   Map<String, dynamic> _stats = {};
   int _avgServiceTime = 900;
   bool _isLoading = true;
+  Timer? _autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _fetchQueue();
+    // Auto-refresh every 5 seconds for near-realtime
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) => _fetchQueueSilent());
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Silent refresh — no loading spinner
+  Future<void> _fetchQueueSilent() async {
+    try {
+      final result = await ApiService.get(ApiConfig.providerQueue);
+      if (result['success'] && mounted) {
+        final data = result['data'];
+        setState(() {
+          _queue = List<Map<String, dynamic>>.from(data['queue'] ?? []);
+          _currentRunning = data['currentRunning'];
+          _stats = Map<String, dynamic>.from(data['stats'] ?? {});
+          _avgServiceTime = data['avgServiceTime'] ?? 900;
+          if (_stats.isEmpty && _queue.isNotEmpty) {
+            _stats = {
+              'pending_count': _queue.where((t) => t['status'] == 'pending').length,
+              'running_count': _queue.where((t) => t['status'] == 'running' || t['status'] == 'confirmed').length,
+              'completed_count': _queue.where((t) => t['status'] == 'completed').length,
+              'skipped_count': _queue.where((t) => t['status'] == 'skipped').length,
+              'total_count': _queue.length,
+            };
+            _currentRunning ??= _queue.cast<Map<String, dynamic>?>().firstWhere(
+              (t) => t?['status'] == 'running' || t?['status'] == 'confirmed',
+              orElse: () => null,
+            );
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _fetchQueue() async {

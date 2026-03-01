@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../config/theme.dart';
 import '../../config/api_config.dart';
 import '../../services/api_service.dart';
@@ -14,18 +15,34 @@ class _QueueStatusScreenState extends State<QueueStatusScreen> with SingleTicker
   List<Map<String, dynamic>> _tokens = [];
   bool _isLoading = true;
   late AnimationController _pulseController;
+  Timer? _autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
     _fetchStatus();
+    // Auto-refresh every 5 seconds for near-realtime
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) => _fetchStatusSilent());
   }
 
   @override
   void dispose() {
+    _autoRefreshTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  /// Silent refresh — no loading spinner
+  Future<void> _fetchStatusSilent() async {
+    try {
+      final result = await ApiService.get(ApiConfig.customerQueueStatus);
+      if (result['success'] && mounted) {
+        setState(() {
+          _tokens = List<Map<String, dynamic>>.from(result['data']['bookings'] ?? []);
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _fetchStatus() async {

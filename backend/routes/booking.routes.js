@@ -8,6 +8,7 @@ const { sendEmail, emailTemplates } = require('../config/smtp');
 const User = require('../models/User');
 const Provider = require('../models/Provider');
 const db = require('../config/db');
+const NotificationService = require('../services/NotificationService');
 
 // All booking routes require authentication + verified
 router.use(authenticate, requireVerified);
@@ -69,6 +70,15 @@ router.post('/', bookingValidation, async (req, res) => {
         } catch (emailErr) {
             console.error('Email send failed (non-blocking):', emailErr.message);
         }
+
+        // Send push notification (non-blocking)
+        NotificationService.sendBookingConfirmed(req.user.id, {
+            tokenNumber: token_number,
+            shopName: providerData[0][0]?.shop_name || 'Provider',
+            date: booking_date,
+            time: slot_time,
+            serviceName: service.service_name
+        }).catch(e => console.error('Push notification error:', e));
 
         res.status(201).json({
             message: 'Booking confirmed',

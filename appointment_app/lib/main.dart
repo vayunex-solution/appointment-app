@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 // Config
 import 'config/theme.dart';
@@ -9,6 +11,8 @@ import 'services/auth_provider.dart';
 import 'services/provider_service.dart';
 import 'services/customer_service.dart';
 import 'services/admin_service.dart';
+import 'services/notification_service.dart';
+import 'services/notification_api_service.dart';
 
 // Screens
 import 'screens/auth/login_screen.dart';
@@ -31,8 +35,21 @@ import 'screens/admin/pending_providers_screen.dart';
 import 'screens/admin/manage_users_screen.dart';
 import 'screens/admin/reports_screen.dart';
 import 'screens/admin/audit_logs_screen.dart';
+import 'screens/customer/notifications_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase (skip on web for now)
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      await NotificationService.initialize();
+    } catch (e) {
+      debugPrint('Firebase init error (non-blocking): $e');
+    }
+  }
+  
   runApp(const MyApp());
 }
 
@@ -47,6 +64,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProviderService()),
         ChangeNotifierProvider(create: (_) => CustomerService()),
         ChangeNotifierProvider(create: (_) => AdminService()),
+        ChangeNotifierProvider(create: (_) => NotificationApiService()),
       ],
       child: MaterialApp(
         title: 'BookNex',
@@ -75,6 +93,7 @@ class MyApp extends StatelessWidget {
           '/admin/users': (context) => const ManageUsersScreen(),
           '/admin/reports': (context) => const ReportsScreen(),
           '/admin/logs': (context) => const AuditLogsScreen(),
+          '/notifications': (context) => const NotificationsScreen(),
         },
       ),
     );
@@ -94,8 +113,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     // Check auth status on app start
-    Future.microtask(() {
-      Provider.of<AuthProvider>(context, listen: false).checkAuthStatus();
+    Future.microtask(() async {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      await auth.checkAuthStatus();
+      // Register FCM token after auth check
+      if (auth.user != null && !kIsWeb) {
+        NotificationService.registerDeviceToken();
+        Provider.of<NotificationApiService>(context, listen: false).fetchUnreadCount();
+      }
     });
   }
 
