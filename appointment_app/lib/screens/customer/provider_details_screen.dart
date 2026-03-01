@@ -53,12 +53,25 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
 
     final dateStr = '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
     
-    final result = await Provider.of<CustomerService>(context, listen: false).createBooking(
+    final serviceProvider = Provider.of<CustomerService>(context, listen: false);
+    final result = await serviceProvider.createBooking(
       providerId: _providerId!,
       serviceId: _selectedService!['id'],
       bookingDate: dateStr,
       slotTime: _selectedSlot!,
     );
+
+    if (!mounted) return;
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(serviceProvider.error ?? 'Failed to complete booking'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
 
     if (result != null && mounted) {
       showDialog(

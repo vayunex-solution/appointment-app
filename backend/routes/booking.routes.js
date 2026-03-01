@@ -24,7 +24,7 @@ router.post('/', bookingValidation, async (req, res) => {
 
         // Get service for locked price and boundary check
         const service = await Service.findById(service_id);
-        if (!service || service.provider_id !== provider_id) {
+        if (!service || Number(service.provider_id) !== Number(provider_id)) {
             return res.status(404).json({ error: 'Service not found or does not belong to the selected provider' });
         }
 
