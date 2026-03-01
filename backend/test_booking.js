@@ -1,43 +1,60 @@
 const axios = require('axios');
+const fs = require('fs');
 const API_URL = 'https://api.booknex.vayunexsolution.com/api';
 
 async function testBooking() {
     try {
-        console.log('--- Registering temporary test customer ---');
-        const email = `test_c_${Math.random().toString(36).substring(7)}@test.com`;
-        const mobile = '9' + Math.floor(100000000 + Math.random() * 900000000).toString();
-
-        await axios.post(`${API_URL}/auth/register/customer`, {
-            name: 'Test Customer', email, mobile, password: 'password123'
+        const loginRes = await axios.post(`${API_URL}/auth/login`, {
+            identifier: 'erp@agrosaw.com',
+            password: 'Test@1234'
+        });
+        const token = loginRes.data.token;
+        
+        const providersRes = await axios.get(`${API_URL}/customer/providers`, {
+            headers: { Authorization: `Bearer ${token}` }
         });
 
-        // The user's screenshot uses ID=6 for clinic "software company" 
-        // Let's hardcode provider ID 6 to replicate the EXACT user error.
-        const providerId = 6;
-        console.log('Using test provider ID:', providerId);
+        const providers = providersRes.data.providers || [];
+        let targetProviderId = null;
+        let targetServiceId = null;
 
-        // Fetch Services
-        const servicesRes = await axios.get(`${API_URL}/customer/providers/${providerId}/services`);
+        for (let p of providers) {
+            try {
+                const servicesRes = await axios.get(`${API_URL}/customer/providers/${p.id}/services`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const services = servicesRes.data.services || [];
+                if (services.length > 0) {
+                    targetProviderId = p.id;
+                    targetServiceId = services[0].id;
+                    break;
+                }
+            } catch (err) { }
+        }
+
+        const bookingPayload = {
+            provider_id: targetProviderId,
+            service_id: targetServiceId,
+            booking_date: '2026-06-16',
+            slot_time: '12:00'
+        };
         
-        const serviceId = servicesRes.data.services[0].id;
-        console.log('Using Service ID:', serviceId);
+        await axios.post(`${API_URL}/bookings`, bookingPayload, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
 
-        // Try booking directly! But first let me login. The user who is testing is NOT VERIFIED.
-        // Wait, the new customer I just registered is NOT VERIFIED, so I cannot login normally due to requireVerified.
-        console.log('Script aborted: I cannot test this without direct DB access to verify my test user or by guessing the user admin credentials.');
+        fs.writeFileSync('test_output2.txt', "SUCCESS");
 
     } catch (e) {
         if (e.response) {
-            console.error('\n--- API RETURNED AN ERROR ---');
-            console.error('Status:', e.response.status);
-            console.error('Data Payload:', JSON.stringify(e.response.data, null, 2));
-            if (typeof e.response.data === 'string') {
-                console.error('Raw HTML summary:', e.response.data.substring(0, 500));
-            }
+            const out = {
+                status: e.response.status,
+                data: e.response.data
+            };
+            fs.writeFileSync('test_output2.txt', JSON.stringify(out, null, 2));
         } else {
-            console.error('Request failed without a response:', e.message);
+            fs.writeFileSync('test_output2.txt', e.message);
         }
     }
 }
-
 testBooking();

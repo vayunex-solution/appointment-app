@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 
 class BiometricService {
   static final LocalAuthentication _auth = LocalAuthentication();
@@ -13,6 +14,7 @@ class BiometricService {
 
   /// Check if device supports biometric
   static Future<bool> isAvailable() async {
+    if (kIsWeb) return false;
     try {
       final canCheck = await _auth.canCheckBiometrics;
       final isSupported = await _auth.isDeviceSupported();
@@ -52,6 +54,7 @@ class BiometricService {
 
   /// Authenticate with biometric
   static Future<bool> authenticate() async {
+    if (kIsWeb) return false;
     try {
       return await _auth.authenticate(
         localizedReason: 'Sign in to BookNex',

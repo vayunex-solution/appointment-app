@@ -1,0 +1,6 @@
+{
+  "status": 500,
+  "data": {
+    "error": "Booking failed"
+  }
+}

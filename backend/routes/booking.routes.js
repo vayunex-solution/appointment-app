@@ -76,7 +76,7 @@ router.post('/', bookingValidation, async (req, res) => {
         });
     } catch (error) {
         console.error('Booking error:', error);
-        res.status(500).json({ error: 'Booking failed' });
+        res.status(500).json({ error: 'Booking failed', details: error.message, stack: error.stack });
     }
 });
 
