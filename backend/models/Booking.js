@@ -28,7 +28,7 @@ class Booking {
 
       // Atomic queue position assignment
       const [maxPos] = await connection.execute(
-        `SELECT COALESCE(MAX(queue_position), 0) as max_pos 
+        `SELECT COALESCE(MAX(queue_number), 0) as max_pos 
          FROM appointments 
          WHERE provider_id = ? AND booking_date = ?
          FOR UPDATE`,
@@ -36,13 +36,13 @@ class Booking {
       );
 
       const queue_position = maxPos[0].max_pos + 1;
-      
+
       // Sequential token: TKN-01, TKN-02, TKN-03...
       const token_number = `TKN-${queue_position.toString().padStart(2, '0')}`;
 
       const [result] = await connection.execute(
         `INSERT INTO appointments 
-         (customer_id, provider_id, service_id, token_number, booking_date, slot_time, locked_price, queue_position)
+         (customer_id, provider_id, service_id, token_number, booking_date, slot_time, locked_price, queue_number)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [customer_id, provider_id, service_id, token_number, booking_date, slot_time, locked_price, queue_position]
       );
@@ -105,7 +105,7 @@ class Booking {
            WHEN 'skipped' THEN 4
            WHEN 'cancelled' THEN 5
          END,
-         a.queue_position ASC`,
+         a.queue_number ASC`,
       [providerId]
     );
     return rows;
